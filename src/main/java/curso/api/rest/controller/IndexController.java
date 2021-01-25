@@ -42,8 +42,12 @@ public class IndexController {
 		return new ResponseEntity<List<Usuario>>(list, HttpStatus.OK);
 	}
 
-	@PostMapping(value = "/")
+	@PostMapping(value = "/", produces = "application/json")
 	public ResponseEntity<Usuario> cadastrar(@RequestBody Usuario usuario) {
+
+		for (int pos = 0; pos < usuario.getTelefones().size(); pos++) {
+			usuario.getTelefones().get(pos).setUsuario(usuario);
+		}
 
 		Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
@@ -53,6 +57,10 @@ public class IndexController {
 	// atualizando usuario
 	@PutMapping(value = "/")
 	public ResponseEntity<Usuario> atualizar(@RequestBody Usuario usuario) {
+		
+		for (int pos = 0; pos < usuario.getTelefones().size(); pos++) {
+			usuario.getTelefones().get(pos).setUsuario(usuario);
+		}
 
 		Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
