@@ -3,6 +3,7 @@ package curso.api.rest.security;
 import java.io.IOException;
 import java.util.Date;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +25,7 @@ public class JWTTokenAuthenticacaoService {
 	/* Tempo de expiracao do token em ms */
 	private static final long EXPIRATION_TIME = 172812345;
 
-	private static final String SECRET = "(*(*((&chsdfkjbabf";
+	private static final String SECRET = "SenhaExtremamenteSecreta";
 
 	// prefixo padrao de token
 	private static final String TOKEN_PREFIX = "Bearer";
@@ -32,14 +33,20 @@ public class JWTTokenAuthenticacaoService {
 	private static final String HEADER_STRING = "Authorization";
 
 	public void addAuthentication(HttpServletResponse response, String username) throws IOException {
-		
+
 		String JWT = Jwts.builder().setSubject(username)
 				.setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
 				.signWith(SignatureAlgorithm.HS512, SECRET).compact();
-		
+
+		String token = TOKEN_PREFIX + " " + JWT;
+
+		response.addHeader(HEADER_STRING, token);
+
+		response.getWriter().write("{\"Authorization\":\"" + token + "\"}");
+
 	}
 
-	public Authentication getAuthentication(HttpServletResponse request) {
+	public Authentication getAuthentication(HttpServletRequest request) {
 
 		String token = request.getHeader(HEADER_STRING);
 
@@ -50,14 +57,12 @@ public class JWTTokenAuthenticacaoService {
 
 			if (user != null) {
 
-				Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class)
+				Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class) 
 						.findUserByLogin(user);
 
 				if (usuario != null) {
 
-					return new UsernamePasswordAuthenticationToken(
-							usuario.getLogin(), 
-							usuario.getSenha(),
+					return new UsernamePasswordAuthenticationToken(usuario.getLogin(), usuario.getSenha(),
 							usuario.getAuthorities());
 
 				}
@@ -67,7 +72,7 @@ public class JWTTokenAuthenticacaoService {
 		}
 
 		return null; // nao autorizado
-		
+
 	}
 
 }
