@@ -11,10 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import com.example.cursospringrestapi.ApplicationContextLoad;
-
 import curso.api.rest.model.Usuario;
 import curso.api.rest.repository.UsuarioRepository;
+import curso.example.cursospringrestapi.ApplicationContextLoad;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
@@ -41,37 +40,68 @@ public class JWTTokenAuthenticacaoService {
 		String token = TOKEN_PREFIX + " " + JWT;
 
 		response.addHeader(HEADER_STRING, token);
+		
+		//evita erro de cors
+		liberacaoCors(response);
 
 		response.getWriter().write("{\"Authorization\":\"" + token + "\"}");
 
 	}
 
-	public Authentication getAuthentication(HttpServletRequest request) {
+	public Authentication getAuthentication(HttpServletRequest request, HttpServletResponse response) {
 
+		// pega na requisicao
 		String token = request.getHeader(HEADER_STRING);
 
 		if (token != null) {
+
+			String tokenLimpo = token.replace(TOKEN_PREFIX, "").trim();
 
 			String user = Jwts.parser().setSigningKey(SECRET).parseClaimsJws(token.replace(TOKEN_PREFIX, "")).getBody()
 					.getSubject();
 
 			if (user != null) {
 
-				Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class) 
+				Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class)
 						.findUserByLogin(user);
 
 				if (usuario != null) {
 
-					return new UsernamePasswordAuthenticationToken(usuario.getLogin(), usuario.getSenha(),
-							usuario.getAuthorities());
+					if (tokenLimpo.equalsIgnoreCase(usuario.getToken())) {
+
+						return new UsernamePasswordAuthenticationToken(usuario.getLogin(), usuario.getSenha(),
+								usuario.getAuthorities());
+					}
 
 				}
 
 			}
 
 		}
-
+		//evita erro de CORS
+		liberacaoCors(response);
+		
 		return null; // nao autorizado
+
+	}
+
+	private void liberacaoCors(HttpServletResponse response) {
+
+		if (response.getHeader("Access-Control-Allow-Origin") == null) {
+			response.addHeader("Access-Control-Allow-Origin", "*");
+		}
+
+		if (response.getHeader("Access-Control-Allow-Headers") == null) {
+			response.addHeader("Access-Control-Allow-Headers", "*");
+		}
+
+		if (response.getHeader("Access-Control-Request-Headers") == null) {
+			response.addHeader("Access-Control-Request-Headers", "*");
+		}
+
+		if (response.getHeader("Access-Control-Allow-Methods") == null) {
+			response.addHeader("Access-Control-Allow-Methods", "*");
+		}
 
 	}
 
