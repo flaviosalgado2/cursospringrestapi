@@ -41,7 +41,11 @@ public class JWTTokenAuthenticacaoService {
 
 		response.addHeader(HEADER_STRING, token);
 		
-		//evita erro de cors
+		//atualiza token no banco de dados
+		ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class)
+		.atualizaTokenUser(JWT, username);
+
+		// evita erro de cors
 		liberacaoCors(response);
 
 		response.getWriter().write("{\"Authorization\":\"" + token + "\"}");
@@ -53,34 +57,45 @@ public class JWTTokenAuthenticacaoService {
 		// pega na requisicao
 		String token = request.getHeader(HEADER_STRING);
 
-		if (token != null) {
+		try {
 
-			String tokenLimpo = token.replace(TOKEN_PREFIX, "").trim();
+			if (token != null) {
 
-			String user = Jwts.parser().setSigningKey(SECRET).parseClaimsJws(token.replace(TOKEN_PREFIX, "")).getBody()
-					.getSubject();
+				String tokenLimpo = token.replace(TOKEN_PREFIX, "").trim();
 
-			if (user != null) {
+				String user = Jwts.parser().setSigningKey(SECRET).parseClaimsJws(token.replace(TOKEN_PREFIX, ""))
+						.getBody().getSubject();
 
-				Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class)
-						.findUserByLogin(user);
+				if (user != null) {
 
-				if (usuario != null) {
+					Usuario usuario = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class)
+							.findUserByLogin(user);
 
-					if (tokenLimpo.equalsIgnoreCase(usuario.getToken())) {
+					if (usuario != null) {
 
-						return new UsernamePasswordAuthenticationToken(usuario.getLogin(), usuario.getSenha(),
-								usuario.getAuthorities());
+						if (tokenLimpo.equalsIgnoreCase(usuario.getToken())) {
+
+							return new UsernamePasswordAuthenticationToken(usuario.getLogin(), usuario.getSenha(),
+									usuario.getAuthorities());
+						}
+
 					}
 
 				}
 
-			}
+			} /* fim da condicao */
 
+		} catch (io.jsonwebtoken.ExpiredJwtException e) {
+			try {
+				response.getOutputStream()
+						.println("Seu TOKEN esta expirado, faca o login ou informe um novo TOKEN para autenticacao");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		}
-		//evita erro de CORS
+		// evita erro de CORS
 		liberacaoCors(response);
-		
+
 		return null; // nao autorizado
 
 	}
