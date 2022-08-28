@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.google.gson.Gson;
 
 import curso.api.rest.model.Usuario;
-import curso.api.rest.model.UsuarioDTO;
 import curso.api.rest.repository.UsuarioRepository;
 
 @RestController
@@ -36,27 +36,27 @@ public class IndexController {
 	@Autowired
 	private UsuarioRepository usuarioRepository;
 
-	@GetMapping(value = "v1/{id}", produces = "application/json", headers = "X-API-Version=v1")
-	public ResponseEntity<UsuarioDTO> initV1(@PathVariable(value = "id") Long id) {
+	@GetMapping(value = "/{id}", produces = "application/json")
+	@CachePut("cacheuser")
+	public ResponseEntity<Usuario> init(@PathVariable(value = "id") Long id) {
+	
+		System.out.println("teste id: ");
+		System.out.println(id);
 
 		Optional<Usuario> usuario = usuarioRepository.findById(id);
 
-		System.out.println("versao 1");
-
-		return new ResponseEntity<UsuarioDTO>(new UsuarioDTO(usuario.get()), HttpStatus.OK);
+		return new ResponseEntity<Usuario>(usuario.get(), HttpStatus.OK);
 
 	}
 
-	@GetMapping(value = "v2/{id}", produces = "application/json", headers = "X-API-Version=v1")
-	public ResponseEntity<Usuario> initV2(@PathVariable(value = "id") Long id) {
-
-		Optional<Usuario> usuario = usuarioRepository.findById(id);
-
-		System.out.println("versao 2");
-
-		return new ResponseEntity(usuario.get(), HttpStatus.OK);
-
-	}
+	//	@GetMapping(value = "/v1/{id}", produces = "application/json", headers = "X-API-Version=v1")
+	//	public ResponseEntity<UsuarioDTO> initV1(@PathVariable(value = "id") Long id) {
+	//
+	//		Optional<Usuario> usuario = usuarioRepository.findById(id);
+	//
+	//		return new ResponseEntity<UsuarioDTO>(new UsuarioDTO(usuario.get()), HttpStatus.OK);
+	//
+	//	}	
 
 	// teste de cache em consultas lentas
 	@GetMapping(value = "/", produces = "application/json")
@@ -69,6 +69,8 @@ public class IndexController {
 
 		// simula uma consulta lenta
 		// Thread.sleep(6000);
+		System.out.println("teste: ");
+		System.out.println(list);
 
 		return new ResponseEntity<List<Usuario>>(list, HttpStatus.OK);
 	}
@@ -139,7 +141,7 @@ public class IndexController {
 
 		// atualizar senha
 		// se a senha dada pra atualizar for diferente da que esta no banco
-		Usuario userTemporario = usuarioRepository.findUserByLogin(usuario.getLogin());
+		Usuario userTemporario = usuarioRepository.findById(usuario.getId()).get();
 
 		if (!userTemporario.getSenha().equals(usuario.getSenha())) {// senhas diferentes
 			String senhacriptografada = new BCryptPasswordEncoder().encode(usuario.getSenha());

@@ -46,7 +46,7 @@ public class Usuario implements UserDetails {
 			"role_id" }, name = "unique_role_user"), joinColumns = @JoinColumn(name = "usuario_id", referencedColumnName = "id", table = "usuario", unique = false, foreignKey = @ForeignKey(name = "usuario_fk", value = ConstraintMode.CONSTRAINT)),
 
 			inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id", table = "role", unique = false, updatable = false, foreignKey = @ForeignKey(name = "role_fk", value = ConstraintMode.CONSTRAINT)))
-	private List<Role> roles; /* os papeis ou acesso */
+	private List<Role> roles = new ArrayList<Role>(); /* os papeis ou acesso */
 	
 	private String token = "";
 	
